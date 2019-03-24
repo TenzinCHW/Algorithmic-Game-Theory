@@ -1,5 +1,13 @@
-from torchnn import *
-from opt import *
+from model_utils.torchnn import *
+from model_utils.opt import *
+
+def get_feat_channels(target_feat_channels):
+    feat_channels = []
+    start_c, end_c = target_feat_channels
+    while start_c < end_c / 2:
+        num_c *= 2
+        feat_channels.append(int(num_c))
+    return feat_channels
 
 def convxpose_bn_relu(inp_c, outp_c, kernel_pad):
     layer = [nn.ConvTranspose2d(inp_c, outp_c, *kernel_pad, bias=False),
@@ -14,9 +22,10 @@ def conv_bn_relu(inp_c, outp_c, kernel_pad):
     return layer
 
 class ConvGenerator(nn.Module):
-    def __init__(self):
+    def __init__(self, target_feat_channels):
         super(ConvGenerator, self).__init__()
-        convxpose_layers = [convxpose_bn_relu(ngf * i * 2, ngf * i, (4, 2, 1)) for i in [4, 2, 1]]
+        feat_channels = get_feat_channels(target_feat_channels)
+        convxpose_layers = [convxpose_bn_relu(ngf * i * 2, ngf * i, (4, 2, 1)) for i in feat_channels]
         self.main = nn.Sequential(
             # input is Z, going into a convolution
             *convxpose_bn_relu(nz, ngf * 8, (4, 1, 0)),
@@ -34,9 +43,10 @@ class ConvGenerator(nn.Module):
         return self.main(inp)
 
 class ConvDiscriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, target_feat_channels):
         super(ConvDiscriminator, self).__init__()
-        conv_layers = [conv_bn_relu(ndf * i, ndf * i * 2, (4, 2, 1)) for i in [1, 2, 4]]
+        feat_channels = get_feat_channels(target_feat_channels)
+        conv_layers = [conv_bn_relu(ndf * i, ndf * i * 2, (4, 2, 1)) for i in feat_channels]
         self.encoder = nn.Sequential(
             # input is (nc) x 64 x 64
             nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
@@ -48,7 +58,7 @@ class ConvDiscriminator(nn.Module):
             # state size. (ndf*8) x 4 x 4
         )
 
-        self.feature_extractor = nn.Conv2d(ndf * 8, 100, 4, 1, 0, bias=False)
+        self.feature_extractor = nn.Conv2d(ndf * 8, nz, 4, 1, 0, bias=False)
 
         self.decoder = nn.Sequential(
             nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
