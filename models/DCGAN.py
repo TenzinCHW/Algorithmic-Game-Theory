@@ -1,14 +1,6 @@
 from model_utils.torchnn import *
 from model_utils.opt import *
 
-def get_feat_channels(target_feat_channels):
-    feat_channels = []
-    start_c, end_c = target_feat_channels
-    while start_c < end_c / 2:
-        num_c *= 2
-        feat_channels.append(int(num_c))
-    return feat_channels
-
 def convxpose_bn_relu(inp_c, outp_c, kernel_pad):
     layer = [nn.ConvTranspose2d(inp_c, outp_c, *kernel_pad, bias=False),
             nn.BatchNorm2d(outp_c),
