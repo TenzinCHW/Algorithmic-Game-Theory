@@ -17,28 +17,27 @@ import torch.nn.functional as F
 import torch.autograd as autograd
 import torch
 
-os.makedirs("images", exist_ok=True)
+import model_utils.opt as opt
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
-parser.add_argument("--img_size", type=int, default=64, help="size of each image dimension")
-parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--n_critic", type=int, default=5, help="number of training steps for discriminator per iter")
-parser.add_argument("--clip_value", type=float, default=0.01, help="lower and upper clip value for disc. weights")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
-opt = parser.parse_args()
-print(opt)
+#parser = argparse.ArgumentParser()
+#parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+#parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
+#parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
+#parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
+#parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
+#parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
+#parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
+#parser.add_argument("--img_size", type=int, default=64, help="size of each image dimension")
+#parser.add_argument("--channels", type=int, default=1, help="number of image channels")
+#parser.add_argument("--n_critic", type=int, default=5, help="number of training steps for discriminator per iter")
+#parser.add_argument("--clip_value", type=float, default=0.01, help="lower and upper clip value for disc. weights")
+#parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
+#opt = parser.parse_args()
+#print(opt)
 
 img_shape = (opt.channels, opt.img_size, opt.img_size)
 
 cuda = True if torch.cuda.is_available() else False
-
 
 class Generator(nn.Module):
     def __init__(self):
@@ -83,40 +82,9 @@ class Discriminator(nn.Module):
         validity = self.model(img_flat)
         return validity
 
-
-# Loss weight for gradient penalty
-lambda_gp = 10
-
-# Initialize generator and discriminator
-generator = Generator()
-discriminator = Discriminator()
-
-if cuda:
-    generator.cuda()
-    discriminator.cuda()
-
-# Configure data loader
-data_path = expanduser('~/Datasets/MNIST/imgs')
-dataloader = torch.utils.data.DataLoader(
-    datasets.MNIST(
-        data_path,
-        train=True,
-        download=False,
-        transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
-    ),
-    batch_size=opt.batch_size,
-    shuffle=True,
-)
-
-# Optimizers
-optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-
-Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-
-
 def compute_gradient_penalty(D, real_samples, fake_samples):
     """Calculates the gradient penalty loss for WGAN GP"""
+    Tensor = torch.cuda.FloatTensor
     # Random weight term for interpolation between real and fake samples
     alpha = Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
     # Get random interpolation between real and fake samples
@@ -136,67 +104,131 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
 
+def optimizer(net, lr):
+    return torch.optim.Adam(net.parameters(), lr=lr, betas=(opt.beta1, opt.beta2))
 
-# ----------
-#  Training
-# ----------
+def train_D(self):
+    Tensor = torch.cuda.FloatTensor
+    # Loss weight for gradient penalty
+    lambda_gp = 10
 
-batches_done = 0
-for epoch in range(opt.n_epochs):
-    for i, (imgs, _) in enumerate(dataloader):
+    def train(real_imgs, cls):
+        self.optimizer_D.zero_grad()
+        z = Tensor(np.random.normal(0, 1, (real_imgs.shape[0], opt.latent_dim)))
+        fake_imgs = self.G(z).detach()
+        real_validity = self.D(real_imgs)
+        fake_validity = self.D(fake_imgs)
+        gradient_penalty = compute_gradient_penalty(self.D, real_imgs.data, fake_imgs.data)
+        loss_D = -torch.mean(real_validity) + torch.mean(fake_validity) + lambda_gp * gradient_penalty
+        loss_D.backward()
+        self.optimizer_D.step()
+        self.optimizer_G.zero_grad()
+        return loss_D.item(), z
+    return train
 
-        # Configure input
-        real_imgs = Variable(imgs.type(Tensor))
+def train_G(self):
+    def train(z, real_imgs, cls):
+        self.optimizer_G.zero_grad()
+        gen_imgs = self.G(z)
+        fake_imgs = self.G(z)
+        loss_G = -torch.mean(self.D(gen_imgs))
+        loss_G.backward()
+        self.optimizer_G.step()
+        return loss_G.item(), gen_imgs
+    return train
 
-        # ---------------------
-        #  Train Discriminator
-        # ---------------------
+if __name__ == '__main__':
+    # Loss weight for gradient penalty
+    lambda_gp = 10
 
-        optimizer_D.zero_grad()
+    os.makedirs("images", exist_ok=True)
+    # Initialize generator and discriminator
+    generator = Generator()
+    discriminator = Discriminator()
 
-        # Sample noise as generator input
-        z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+    if cuda:
+        generator.cuda()
+        discriminator.cuda()
 
-        # Generate a batch of images
-        fake_imgs = generator(z)
+    # Configure data loader
+    data_path = expanduser('~/Datasets/MNIST/imgs')
+    dataloader = torch.utils.data.DataLoader(
+        datasets.MNIST(
+            data_path,
+            train=True,
+            download=False,
+            transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
+        ),
+        batch_size=opt.batch_size,
+        shuffle=True,
+    )
 
-        # Real images
-        real_validity = discriminator(real_imgs)
-        # Fake images
-        fake_validity = discriminator(fake_imgs)
-        # Gradient penalty
-        gradient_penalty = compute_gradient_penalty(discriminator, real_imgs.data, fake_imgs.data)
-        # Adversarial loss
-        d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + lambda_gp * gradient_penalty
+    # Optimizers
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
-        d_loss.backward()
-        optimizer_D.step()
+    Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
-        optimizer_G.zero_grad()
+    # ----------
+    #  Training
+    # ----------
 
-        # Train the generator every n_critic steps
-        if i % opt.n_critic == 0:
+    batches_done = 0
+    for epoch in range(opt.n_epochs):
+        for i, (imgs, _) in enumerate(dataloader):
 
-            # -----------------
-            #  Train Generator
-            # -----------------
+            # Configure input
+            real_imgs = Variable(imgs.type(Tensor))
+
+            # ---------------------
+            #  Train Discriminator
+            # ---------------------
+
+            optimizer_D.zero_grad()
+
+            # Sample noise as generator input
+            z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
             # Generate a batch of images
             fake_imgs = generator(z)
-            # Loss measures generator's ability to fool the discriminator
-            # Train on fake images
+
+            # Real images
+            real_validity = discriminator(real_imgs)
+            # Fake images
             fake_validity = discriminator(fake_imgs)
-            g_loss = -torch.mean(fake_validity)
+            # Gradient penalty
+            gradient_penalty = compute_gradient_penalty(discriminator, real_imgs.data, fake_imgs.data)
+            # Adversarial loss
+            d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + lambda_gp * gradient_penalty
 
-            g_loss.backward()
-            optimizer_G.step()
+            d_loss.backward()
+            optimizer_D.step()
 
-            print(
-                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-            )
+            optimizer_G.zero_grad()
 
-            if batches_done % opt.sample_interval == 0:
-                save_image(fake_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            # Train the generator every n_critic steps
+            if i % opt.n_critic == 0:
 
-            batches_done += opt.n_critic
+                # -----------------
+                #  Train Generator
+                # -----------------
+
+                # Generate a batch of images
+                fake_imgs = generator(z)
+                # Loss measures generator's ability to fool the discriminator
+                # Train on fake images
+                fake_validity = discriminator(fake_imgs)
+                g_loss = -torch.mean(fake_validity)
+
+                g_loss.backward()
+                optimizer_G.step()
+
+                print(
+                    "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                    % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+                )
+
+                if batches_done % opt.sample_interval == 0:
+                    save_image(fake_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+
+                batches_done += opt.n_critic
