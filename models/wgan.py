@@ -96,13 +96,13 @@ def train_D(self):
     return train
 
 def train_G(self):
-    def train(z, imgs, cls):
+    def train(z, real_imgs, cls):
         self.optimizer_G.zero_grad()
-        gen_imgs = self.G(z)
-        loss_G = -torch.mean(self.D(gen_imgs))
+        fake_imgs = self.G(z)
+        loss_G = -torch.mean(self.D(fake_imgs))
         loss_G.backward()
         self.optimizer_G.step()
-        return loss_G.item(), gen_imgs
+        return loss_G.item(), fake_imgs
     return train
 
 if __name__ == '__main__':
