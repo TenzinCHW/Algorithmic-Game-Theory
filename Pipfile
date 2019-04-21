@@ -13,6 +13,8 @@ tornado = "~=4.5.3"
 matplotlib = "*"
 tqdm = "*"
 torch = {file = "https://download.pytorch.org/whl/cu100/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl"}
+scipy = "*"
+tensorboardx = "*"
 
 [requires]
 python_version = "3.6"
