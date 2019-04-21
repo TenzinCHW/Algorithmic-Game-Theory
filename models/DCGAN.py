@@ -21,6 +21,15 @@ def get_feat_channels(target_feat_channels):
         start_c *= 2
     return feat_channels
 
+# custom weights initialization called on netG and netD
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)
+
 class Generator(nn.Module):
     def __init__(self, target_feat_channels=(1,8)):
         super(Generator, self).__init__()
@@ -39,6 +48,7 @@ class Generator(nn.Module):
             nn.Tanh()
             # state size. (nc) x 64 x 64
         )
+        self.apply(weights_init)
 
     def forward(self, inp):
         if len(inp.shape) == 2:
@@ -67,6 +77,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(opt.ndf * 8, 1, 4, 1, 0, bias=False),
             nn.Sigmoid()
         )
+        self.apply(weights_init)
 
     def forward(self, inp):
         self.calc_grad(True)
