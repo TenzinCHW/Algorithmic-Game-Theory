@@ -15,7 +15,7 @@ ngf = 64
 ndf = 64
 
 # Number of training epochs
-n_epochs = 5
+n_epochs = 200
 
 batch_size = 256
 
@@ -38,9 +38,8 @@ clip_value = 0.01
 sample_interval = 400
 
 # Hyperparameters
-hyperparams = {'lr' : [0.0002, 0.002, 0.02, 0.1],
-               'n_critic' : [5, 10, 15]}
-
-#{'D' : [0.0002, 0.002, 0.02, 0.1],
-#                       'G' : [0.0002, 0.002, 0.02, 0.1]},
+hyperparams = {'lr' : [0.0002],
+               'n_critic': [5]}
+#hyperparams = {'lr' : [0.0002, 0.002, 0.02, 0.1],
+#               'n_critic' : [5, 10, 15]}
 
