@@ -11,7 +11,7 @@ Install the requirements with `pipenv install`
 
 ## Credits
 We have used code from the following sources (stars were given to respective repos):
-https://github.com/eriklindernoren/PyTorch-GAN
-https://github.com/heykeetae/Self-Attention-GAN
-https://github.com/sbarratt/inception-score-pytorch
-https://github.com/mseitzer/pytorch-fid
+- https://github.com/eriklindernoren/PyTorch-GAN
+- https://github.com/heykeetae/Self-Attention-GAN
+- https://github.com/sbarratt/inception-score-pytorch
+- https://github.com/mseitzer/pytorch-fid
