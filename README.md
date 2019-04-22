@@ -9,6 +9,10 @@ The project aims to explore the dynamics of Generative Adversarial Networks trai
 ## Requirements
 Install the requirements with `pipenv install`
 
+## Usage
+To train the models, run `python main.py`
+To generate the scores for the models, run `python test.py`
+
 ## Credits
 We have used code from the following sources (stars were given to respective repos):
 - https://github.com/eriklindernoren/PyTorch-GAN
