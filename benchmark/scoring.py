@@ -24,8 +24,9 @@ def save_test_statistics(model_dir):
         bench_dir = join(run_dir, 'bench')
         os.makedirs(bench_dir, exist_ok=True)
         for iteration in loop_path(images_dir):
+            i = iteration.split('/')[-1]
             save_statistics(inception_model, iteration,
-                            join(bench_dir, f'{iteration}.npz'))
+                            join(bench_dir, f'{i}.npz'))
 
 def init_inception():
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[DIMS]
@@ -61,7 +62,7 @@ def save_inception_scores(model_dir):
             inception_scores[iteration.split('/')[-1]] = {'mu' : mu,
                                                           'sigma' : sigma}
         with open(join(run, 'bench', 'inception.json'), 'w') as f:
-            json.dump(inception_scores, f)
+            json.dump(inception_scores, f, indent=2)
 
 def loop_path(path):
     files = os.listdir(path)
