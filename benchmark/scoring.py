@@ -50,7 +50,7 @@ def save_fid_scores(ref_stats_path, model_dir):
                 continue
             paths = (ref_stats_path, join(test_stat_dir, path))
             _, _, fid_score = calculate_fid_given_paths(paths, BATCH_SIZE, CUDA, DIMS)
-            fid_scores[path] = fid_score
+            fid_scores[path.split('.')[0]] = fid_score
         with open(join(test_stat_dir, 'fid.json'), 'w') as f:
             json.dump(fid_scores, f, indent=2)
 
