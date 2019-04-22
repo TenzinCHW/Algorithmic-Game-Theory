@@ -51,8 +51,6 @@ class Generator(nn.Module):
         self.apply(weights_init)
 
     def forward(self, inp):
-        if len(inp.shape) == 2:
-            inp = inp.unsqueeze(-1).unsqueeze(-1)
         return self.main(inp)
 
 class Discriminator(nn.Module):
@@ -108,7 +106,7 @@ def train_D(self):
         real_loss = criterion(real_pred, label)
         real_loss.backward()
 
-        z = Tensor(np.random.normal(0, 1, (batch_sz, opt.latent_dim)))
+        z = Tensor(np.random.normal(0, 1, (batch_sz, opt.latent_dim, 1, 1)))
         fake_imgs = self.G(z).detach()
         label = Tensor(np.zeros((batch_sz,)))
         fake_pred = self.D(fake_imgs).view(-1)
