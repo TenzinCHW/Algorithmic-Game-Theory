@@ -10,8 +10,9 @@ for model_type in os.listdir('results'):
     if model_type == 'ref':
         continue
     model_dir = join('results', model_type)
-    #save_test_statistics(model_dir)
+    save_test_statistics(model_dir)
 
     ref_stat_path = join(ref_stat_dir, 'ref_fid.npz')
     save_fid_scores(ref_stat_path, model_dir)
+    save_inception_scores(model_dir)
 
