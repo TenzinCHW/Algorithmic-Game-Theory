@@ -58,7 +58,7 @@ def plot_item(name, loss, item_to_plot):
 D_losses, G_losses = {}, {}
 inception_scores, fid_scores = {}, {}
 
-for arch in ['DCGAN', 'DCGAN_2N', 'DCWGAN_2N', 'SAGAN']:
+for arch in ['DCGAN', 'DCGAN_2N', 'DCWGAN_2N']: #,'SAGAN']:
     base_path = join('results', arch, '0.0002.5')
     loss_path = join(base_path, 'losses.json')
     if arch == 'SAGAN':
@@ -81,9 +81,21 @@ for arch in ['DCGAN', 'DCGAN_2N', 'DCWGAN_2N', 'SAGAN']:
 plot(D_losses, 'Discriminator')
 plot(G_losses, 'Generator')
 
-plot(inception_scores, 'Inception Score', y_label='Score')
-plot(fid_scores, 'Frechet Inception Score', y_label='Score')
+plot(inception_scores, 'Inception Score', y_label='')
+plot(fid_scores, 'Frechet Inception Score', y_label='')
 
-for arch in ['DCGANSpect', 'DCGANSpect_2N', 'DCGANSpect_Soft2N']:
-    pass
+inception_scores2, fid_scores2 = {}, {}
+for arch in ['DCGANSpect', 'DCGANSpect_2N', 'DCGANSpect_Soft2N']: #, 'Resnet']:
+    base_path = join('results', arch, '0.0002.5')
+    inception_path = join(base_path, 'bench', 'inception.json')
+    with open(inception_path) as f:
+        raw_inception_score = json.load(f)
+        inception_scores2[arch] = extract_inception(raw_inception_score)
+    fid_path = join(base_path, 'bench', 'fid.json')
+    with open(fid_path) as f:
+        raw_fid = json.load(f)
+        fid_scores2[arch] = extract_fid(raw_fid)
+
+plot(inception_scores2, 'Inception Score', y_label='', x_label='Epoch')
+plot(fid_scores2, 'Frechet Inception Score', y_label='', x_label='Epoch')
 
