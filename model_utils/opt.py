@@ -6,7 +6,7 @@ img_size = 64
 channels = 3
 
 # Size of z latent vector (i.e. size of generator input)
-latent_dim = 100
+latent_dim = 128
 
 # Size of feature maps in generator
 ngf = 64

@@ -78,12 +78,12 @@ class Discriminator(nn.Module):
         self.apply(weights_init)
 
     def forward(self, inp):
-        self.calc_grad(True)
+        #self.calc_grad(True)
         inp = self.encoder(inp)
         return self.decoder(inp)
 
     def get_features(self, inp):
-        self.calc_grad(False)
+        #self.calc_grad(False)
         inp = self.encoder(inp)
         return self.feature_extractor(inp)
 
